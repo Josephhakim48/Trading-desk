@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-layout="full">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="A quiet forex session clock for your Notion trading desk. Tokyo, London, New York, and their overlap in your time zone.">
+  <title>Joseph’s Trading Desk · Session Clock</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="desk" id="desk" aria-label="Forex session clock">
+    <header class="topbar">
+      <div class="brand">
+        <svg class="brand-icon" viewBox="0 0 28 28" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="10.5" stroke="currentColor"/><path d="M14 1v5m0 16v5M1 14h5m16 0h5m-11-9-4 3-3 8 8-3 3-8-4 3Z" stroke="currentColor" stroke-linejoin="round"/></svg>
+        <span id="desk-name">JOSEPH’S TRADING DESK</span>
+      </div>
+      <div class="header-right">
+        <div class="home-clock"><time id="home-time" aria-live="off">--:--:--</time><span id="home-zone">JUBA · UTC+02</span></div>
+        <div class="controls" aria-label="Widget controls">
+          <button class="icon-button" id="compact-button" type="button" aria-label="Use compact layout" aria-pressed="false" title="Compact view (C)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><rect x="3" y="3" width="14" height="14" rx="2"/><rect x="6.5" y="6.5" width="7" height="7" rx="1"/></svg></button>
+          <button class="icon-button fullscreen-button" id="fullscreen-button" type="button" aria-label="Enter fullscreen" title="Fullscreen (F)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="M7 3H3v4m10-4h4v4M3 13v4h4m10-4v4h-4"/></svg></button>
+          <button class="icon-button" id="settings-button" type="button" aria-label="Open settings and session guide" title="Settings and guide (S)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.25" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14"/><circle cx="7" cy="5" r="2" fill="var(--paper)"/><circle cx="13" cy="10" r="2" fill="var(--paper)"/><circle cx="8" cy="15" r="2" fill="var(--paper)"/></svg></button>
+        </div>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="headline">
+      <div class="hero-meta"><p class="eyebrow" id="today-label">YOUR TRADING DAY</p><span class="open-count" id="open-count">SESSION CLOCK</span></div>
+      <h1 id="headline">Your trading day, in view.</h1>
+      <p class="next-change" id="next-change">Preparing your session schedule…</p>
+    </section>
+
+    <section class="session-grid" aria-label="Regular forex sessions">
+      <article class="session" data-session="asia" data-active="false" id="asia-card" aria-labelledby="asia-name">
+        <div class="card-top"><h2 id="asia-name"><span class="session-dot" aria-hidden="true"></span>Asia</h2><span class="badge" id="asia-status">CLOSED</span></div>
+        <p class="city-clock">Tokyo <span aria-hidden="true">·</span> <time id="asia-city-time">--:--</time></p>
+        <div class="countdown-block"><span class="countdown-label" id="asia-countdown-label">OPENS IN</span><time class="countdown" id="asia-countdown" aria-live="off">--:--:--</time></div>
+        <div class="schedule"><p class="occurrence" id="asia-occurrence">Next session · Juba</p><p class="window"><time id="asia-start">--:--</time><span class="window-dash" aria-hidden="true">—</span><time id="asia-end">--:--</time><span class="day-offset" id="asia-offset"></span></p></div>
+        <div class="progress" id="asia-progress" role="progressbar" aria-label="Asia session elapsed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="asia-fill"></span></div>
+      </article>
+      <article class="session" data-session="london" data-active="false" id="london-card" aria-labelledby="london-name">
+        <div class="card-top"><h2 id="london-name"><span class="session-dot" aria-hidden="true"></span>London</h2><span class="badge" id="london-status">CLOSED</span></div>
+        <p class="city-clock">London <span aria-hidden="true">·</span> <time id="london-city-time">--:--</time></p>
+        <div class="countdown-block"><span class="countdown-label" id="london-countdown-label">OPENS IN</span><time class="countdown" id="london-countdown" aria-live="off">--:--:--</time></div>
+        <div class="schedule"><p class="occurrence" id="london-occurrence">Next session · Juba</p><p class="window"><time id="london-start">--:--</time><span class="window-dash" aria-hidden="true">—</span><time id="london-end">--:--</time><span class="day-offset" id="london-offset"></span></p></div>
+        <div class="progress" id="london-progress" role="progressbar" aria-label="London session elapsed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="london-fill"></span></div>
+      </article>
+      <article class="session" data-session="newyork" data-active="false" id="newyork-card" aria-labelledby="newyork-name">
+        <div class="card-top"><h2 id="newyork-name"><span class="session-dot" aria-hidden="true"></span>New York</h2><span class="badge" id="newyork-status">CLOSED</span></div>
+        <p class="city-clock">New York <span aria-hidden="true">·</span> <time id="newyork-city-time">--:--</time></p>
+        <div class="countdown-block"><span class="countdown-label" id="newyork-countdown-label">OPENS IN</span><time class="countdown" id="newyork-countdown" aria-live="off">--:--:--</time></div>
+        <div class="schedule"><p class="occurrence" id="newyork-occurrence">Next session · Juba</p><p class="window"><time id="newyork-start">--:--</time><span class="window-dash" aria-hidden="true">—</span><time id="newyork-end">--:--</time><span class="day-offset" id="newyork-offset"></span></p></div>
+        <div class="progress" id="newyork-progress" role="progressbar" aria-label="New York session elapsed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="newyork-fill"></span></div>
+      </article>
+    </section>
+
+    <section class="overlap" id="overlap" data-active="false" aria-labelledby="overlap-title">
+      <div class="overlap-left"><span class="overlap-icon" aria-hidden="true"><i></i><i></i></span><div><h2 id="overlap-title">London <span>×</span> New York</h2><p id="overlap-detail">Preparing the next overlap…</p></div></div>
+      <div class="overlap-right"><span id="overlap-label">STARTS IN</span><time id="overlap-countdown" aria-live="off">--:--:--</time></div>
+    </section>
+
+    <section class="day-map" id="day-map" aria-labelledby="map-title">
+      <div class="map-heading"><h2 class="eyebrow" id="map-title">TODAY’S SESSION MAP</h2><span id="map-zone">JUBA · 24H</span></div>
+      <div class="map-axis" id="map-axis" aria-hidden="true"></div>
+      <div class="map-row" data-session="asia"><span class="map-name">Asia</span><div class="map-track" id="asia-track" role="img" aria-label="Asia session on today’s timeline"><div class="map-bars" id="asia-bars"></div><div class="map-ticks" id="asia-ticks" aria-hidden="true"></div><span class="now-line" id="asia-now" aria-hidden="true"></span></div></div>
+      <div class="map-row" data-session="london"><span class="map-name">London</span><div class="map-track" id="london-track" role="img" aria-label="London session on today’s timeline"><div class="map-bars" id="london-bars"></div><div class="map-ticks" id="london-ticks" aria-hidden="true"></div><span class="now-line" id="london-now" aria-hidden="true"></span></div></div>
+      <div class="map-row" data-session="newyork"><span class="map-name">New York</span><div class="map-track" id="newyork-track" role="img" aria-label="New York session on today’s timeline"><div class="map-bars" id="newyork-bars"></div><div class="map-ticks" id="newyork-ticks" aria-hidden="true"></div><span class="now-line" id="newyork-now" aria-hidden="true"></span></div></div>
+    </section>
+
+    <footer class="footer"><p>Regular sessions; holidays &amp; broker hours may differ.</p><button class="text-button" id="guide-button" type="button">Session guide <span aria-hidden="true">↗</span></button></footer>
+    <p class="notice" id="storage-notice" hidden>Preferences are applied for this visit. Browser storage is unavailable.</p>
+    <p class="notice" id="error-notice" role="status" hidden>The clock could not load. Please refresh in a current browser.</p>
+    <p class="sr-only" id="session-announcement" role="status" aria-live="polite" aria-atomic="true"></p>
+    <noscript><p class="notice">Enable JavaScript to display session times and countdowns.</p></noscript>
+  </main>
+
+  <dialog class="settings-dialog" id="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-header"><div><p class="eyebrow">MAKE IT YOURS</p><h2 id="settings-title">Your trading desk.</h2></div><button class="icon-button" id="close-settings" type="button" aria-label="Close settings"><svg viewBox="0 0 20 20" stroke="currentColor" stroke-width="1.3" aria-hidden="true"><path d="m5 5 10 10M15 5 5 15"/></svg></button></div>
+    <form id="settings-form">
+      <div class="field full-width"><label for="name-input">Desk name</label><input id="name-input" name="name" maxlength="42" autocomplete="off" placeholder="Joseph’s Trading Desk"></div>
+      <div class="field full-width"><label for="zone-input">Display session times in</label><select id="zone-input" name="zone"><option value="Africa/Juba">Juba · South Sudan</option><option value="UTC">UTC</option><option value="Europe/London">London · United Kingdom</option><option value="America/New_York">New York · United States</option><option value="Asia/Tokyo">Tokyo · Japan</option><option value="Australia/Sydney">Sydney · Australia</option></select></div>
+      <div class="field"><label for="format-input">Clock format</label><select id="format-input" name="format"><option value="24">24-hour</option><option value="12">12-hour</option></select></div>
+      <div class="field"><label for="theme-input">Appearance</label><select id="theme-input" name="theme"><option value="dark">Charcoal</option><option value="light">Warm paper</option></select></div>
+      <div class="field full-width"><label for="layout-input">Layout</label><select id="layout-input" name="layout"><option value="auto">Automatic · adapts to the embed</option><option value="full">Full · includes the session map</option><option value="compact">Compact · essential information</option></select></div>
+      <div class="form-actions full-width"><span>Saved on this browser when available.</span><button class="save-button" type="submit">Save preferences</button></div>
+    </form>
+    <div class="session-guide" id="session-guide">
+      <h3>How this clock works</h3>
+      <p>These are the regular forex session conventions from your original desk. Each runs Monday–Friday in its city’s calendar.</p>
+      <table><caption class="sr-only">Session schedules in each city’s local time</caption><thead><tr><th scope="col">Session</th><th scope="col">Local hours</th><th scope="col">Time zone</th></tr></thead><tbody><tr><th scope="row">Asia / Tokyo</th><td>09:00–18:00</td><td>Asia/Tokyo</td></tr><tr><th scope="row">London</th><td>08:00–17:00</td><td>Europe/London</td></tr><tr><th scope="row">New York</th><td>08:00–17:00</td><td>America/New_York</td></tr></tbody></table>
+      <p>London and New York adjust for daylight saving independently. The overlap uses the intersection of their actual timestamps. <strong>+1d</strong> means the closing time is on the next display-zone date.</p>
+      <p>The map shows your selected local date. The white marker is now; colored bands are scheduled sessions. Asia means Tokyo here. Sydney is not tracked, so “between sessions” does not mean the entire forex market is closed.</p>
+      <p>This clock shows a schedule, not prices or a broker’s trading availability. Public holidays and broker maintenance are not included. <a href="https://www.oanda.com/us-en/trading/hours-of-operation/" target="_blank" rel="noopener noreferrer">Example broker hours</a> · <a href="https://www.gov.uk/when-do-the-clocks-change" target="_blank" rel="noopener noreferrer">UK clock changes</a> · <a href="https://www.nist.gov/pml/time-and-frequency-division/popular-links/daylight-saving-time-dst" target="_blank" rel="noopener noreferrer">US clock changes</a></p>
+      <p class="shortcuts"><kbd>C</kbd> Compact <kbd>F</kbd> Fullscreen <kbd>S</kbd> Settings <kbd>Esc</kbd> Close</p>
+    </div>
+  </dialog>
+</body>
+</html>

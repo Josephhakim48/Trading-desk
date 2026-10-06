@@ -6,8 +6,240 @@
   <meta name="color-scheme" content="dark light">
   <meta name="description" content="A quiet forex session clock for your Notion trading desk. Tokyo, London, New York, and their overlap in your time zone.">
   <title>Joseph’s Trading Desk · Session Clock</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
+  <style>
+:root {
+  color-scheme: dark;
+  --paper: #191919;
+  --card: #202020;
+  --ink: #f0ece4;
+  --muted: #aca79f;
+  --faint: #92908b;
+  --line: #34322f;
+  --soft: #2a2825;
+  --beige: #cbb6a0;
+  --asia: #afd292;
+  --asia-tint: rgba(175, 210, 146, .055);
+  --london: #cfa4ce;
+  --london-tint: rgba(207, 164, 206, .065);
+  --newyork: #dfae84;
+  --newyork-tint: rgba(223, 174, 132, .065);
+  --mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+  --paper: #f8f5ef;
+  --card: #f0ede6;
+  --ink: #2b2825;
+  --muted: #6f685f;
+  --faint: #756d63;
+  --line: #ded7cc;
+  --soft: #e7e0d6;
+  --beige: #8d755b;
+  --asia: #4c6d37;
+  --asia-tint: rgba(76, 109, 55, .045);
+  --london: #80527f;
+  --london-tint: rgba(128, 82, 127, .045);
+  --newyork: #98602f;
+  --newyork-tint: rgba(152, 96, 47, .045);
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { min-width: 240px; background: var(--paper); }
+body { margin: 0; padding: 10px; background: var(--paper); color: var(--ink); font: 12px/1.45 Arial, Helvetica, sans-serif; }
+button, input, select { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button { cursor: pointer; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--beige); outline-offset: 4px; }
+button:disabled { cursor: default; opacity: .5; }
+button svg { pointer-events: none; }
+.desk { max-width: 920px; margin: 0 auto; padding: 19px 22px 15px; border: 1px solid var(--line); border-radius: 16px; background: var(--paper); }
+.topbar, .brand, .header-right, .controls, .hero-meta, .card-top, .overlap, .overlap-left, .map-heading, .footer, .dialog-header, .form-actions { display: flex; align-items: center; }
+.topbar { justify-content: space-between; gap: 12px; }
+.brand { gap: 9px; min-width: 0; color: var(--beige); font-size: 9px; font-weight: 600; letter-spacing: .115em; }
+.brand-icon { width: 25px; height: 25px; flex: none; }
+#desk-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-right { gap: 14px; flex-shrink: 0; }
+.home-clock { display: flex; align-items: flex-end; flex-direction: column; gap: 1px; }
+.home-clock time { color: var(--ink); font: 11px/1.2 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.home-clock span { color: var(--faint); font-size: 7px; letter-spacing: .09em; white-space: nowrap; }
+.controls { gap: 4px; }
+.icon-button { display: grid; place-items: center; width: 29px; height: 29px; padding: 0; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); }
+.icon-button svg { width: 17px; height: 17px; }
+.icon-button:hover { color: var(--ink); background: var(--soft); }
+.icon-button[aria-pressed="true"] { color: var(--beige); background: var(--soft); border-color: var(--line); }
+.hero { padding: 19px 0 17px; }
+.hero-meta { justify-content: space-between; gap: 12px; }
+.eyebrow { margin: 0; color: var(--muted); font-size: 8px; font-weight: 600; letter-spacing: .15em; line-height: 1.45; }
+.open-count { color: var(--faint); font: 8px/1.45 var(--mono); letter-spacing: .05em; }
+.open-count[data-open="true"] { color: var(--beige); }
+h1 { margin: 6px 0 5px; font: 400 clamp(25px, 3.5vw, 34px)/1.15 Georgia, "Times New Roman", serif; letter-spacing: -.03em; text-wrap: balance; }
+.next-change { margin: 0; color: var(--muted); font-size: 10px; min-height: 15px; }
+.session-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.session, .map-row { --accent: var(--asia); --tint: var(--asia-tint); }
+[data-session="london"] { --accent: var(--london); --tint: var(--london-tint); }
+[data-session="newyork"] { --accent: var(--newyork); --tint: var(--newyork-tint); }
+.session { position: relative; min-width: 0; padding: 13px 14px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.session::before { content: ""; position: absolute; top: -1px; left: 14px; right: 14px; height: 1px; background: var(--accent); opacity: .65; }
+.session[data-active="true"] { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); background: linear-gradient(var(--tint), var(--tint)), var(--card); }
+.session[data-active="true"]::before { opacity: 1; }
+.card-top { justify-content: space-between; gap: 6px; min-height: 19px; }
+.card-top h2 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.session-dot { width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--accent); }
+.badge { color: var(--faint); font-size: 7px; line-height: 1.2; font-weight: 600; letter-spacing: .08em; white-space: nowrap; }
+.session[data-active="true"] .badge, .session[data-soon="true"] .badge { color: var(--accent); }
+.city-clock { margin: 4px 0 0; color: var(--faint); font-size: 9px; }
+.city-clock time { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.city-clock > span { padding: 0 3px; }
+.countdown-block { margin-top: 16px; }
+.countdown-label { display: block; color: var(--faint); font-size: 7px; letter-spacing: .13em; }
+.countdown { display: block; margin-top: 3px; font: 400 clamp(20px, 2.8vw, 29px)/1.18 var(--mono); font-variant-numeric: tabular-nums; letter-spacing: -.055em; white-space: nowrap; }
+.countdown[data-long="true"] { font-size: clamp(16px, 2.15vw, 23px); letter-spacing: -.065em; }
+.session[data-active="true"] .countdown { color: var(--accent); }
+.schedule { margin-top: 14px; }
+.occurrence { margin: 0 0 3px; color: var(--faint); font-size: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.window { display: flex; align-items: baseline; gap: 6px; margin: 0; color: var(--muted); font: 10px/1.3 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.window-dash { color: var(--faint); }
+.day-offset { color: var(--faint); font: 7px Arial, Helvetica, sans-serif; }
+.progress { height: 2px; margin-top: 12px; border-radius: 2px; overflow: hidden; background: var(--soft); }
+.progress > span { display: block; height: 100%; width: 0; background: var(--accent); }
+.overlap { justify-content: space-between; gap: 12px; margin-top: 11px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 9px; }
+.overlap-left { gap: 12px; min-width: 0; }
+.overlap-icon { display: flex; flex: none; width: 27px; }
+.overlap-icon i { width: 17px; height: 17px; border: 1px solid var(--london); border-radius: 50%; }
+.overlap-icon i + i { margin-left: -6px; border-color: var(--newyork); }
+.overlap h2 { margin: 0 0 2px; font-size: 10px; font-weight: 600; }
+.overlap h2 > span { color: var(--faint); padding: 0 3px; }
+.overlap p { margin: 0; color: var(--muted); font-size: 9px; }
+.overlap-right { display: flex; align-items: flex-end; flex-direction: column; gap: 2px; flex: none; }
+.overlap-right > span { color: var(--faint); font-size: 7px; letter-spacing: .1em; }
+.overlap-right time { font: 12px/1.3 var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.overlap[data-active="true"] { background: var(--london-tint); border-color: color-mix(in srgb, var(--london) 40%, var(--line)); }
+.overlap[data-active="true"] .overlap-right > span, .overlap[data-active="true"] h2 { color: var(--london); }
+.day-map { margin-top: 17px; }
+.map-heading { justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+.map-heading > span { color: var(--faint); font-size: 7px; letter-spacing: .1em; }
+.map-axis { position: relative; margin-left: 62px; height: 15px; color: var(--faint); font: 7px/1 var(--mono); }
+.axis-tick { position: absolute; top: 0; transform: translateX(-50%); }
+.axis-tick:first-child { transform: none; }
+.axis-tick:last-child { transform: translateX(-100%); }
+.map-row { display: grid; grid-template-columns: 62px 1fr; align-items: center; margin: 4px 0; }
+.map-name { color: var(--muted); font-size: 8px; }
+.map-track { position: relative; height: 12px; background: var(--soft); border-radius: 3px; overflow: hidden; }
+.map-bar { position: absolute; top: 3px; height: 6px; background: var(--accent); border-radius: 2px; opacity: .6; }
+.map-bar[data-active="true"] { opacity: .95; }
+.map-tick { position: absolute; inset-block: 0; width: 1px; background: var(--paper); opacity: .55; }
+.now-line { position: absolute; inset-block: 0; width: 1px; background: var(--ink); z-index: 2; }
+.footer { justify-content: space-between; gap: 14px; margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--faint); }
+.footer p { margin: 0; font-size: 8px; }
+.text-button { flex: none; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 8px; }
+.text-button:hover { color: var(--ink); }
+.text-button span { margin-left: 3px; }
+.notice { border: 1px solid var(--newyork); border-radius: 7px; padding: 10px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+:root[data-layout="compact"] .desk { padding: 15px 17px 12px; }
+:root[data-layout="compact"] .hero { padding: 14px 0; }
+:root[data-layout="compact"] h1 { font-size: clamp(24px, 3.2vw, 29px); }
+:root[data-layout="compact"] .next-change, :root[data-layout="compact"] .day-map { display: none; }
+:root[data-layout="compact"] .countdown-block { margin-top: 12px; }
+:root[data-layout="compact"] .session { padding: 11px 12px 10px; }
+:root[data-layout="compact"] .schedule { margin-top: 10px; }
+:root[data-layout="compact"] .footer { margin-top: 10px; }
+.settings-dialog { width: min(460px, calc(100vw - 24px)); max-height: calc(100dvh - 30px); margin: auto; padding: 22px; border: 1px solid var(--line); border-radius: 15px; background: var(--paper); color: var(--ink); overflow-y: auto; }
+.settings-dialog::backdrop { background: rgba(0,0,0,.65); }
+.dialog-header { justify-content: space-between; gap: 14px; align-items: flex-start; margin-bottom: 18px; }
+.dialog-header h2 { margin: 4px 0 0; font: 400 25px/1.2 Georgia, "Times New Roman", serif; letter-spacing: -.02em; }
+#settings-form { display: grid; grid-template-columns: 1fr 1fr; gap: 13px 12px; }
+.full-width { grid-column: 1 / -1; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label { color: var(--muted); font-size: 10px; }
+.field input, .field select { width: 100%; min-width: 0; height: 35px; padding: 0 9px; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 6px; font-size: 11px; }
+.form-actions { justify-content: space-between; gap: 12px; margin-top: 3px; }
+.form-actions > span { max-width: 160px; color: var(--faint); font-size: 9px; }
+.save-button { padding: 9px 12px; border: 1px solid var(--beige); border-radius: 6px; background: var(--beige); color: var(--paper); font-size: 10px; font-weight: 600; }
+.session-guide { margin-top: 21px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 10px; line-height: 1.6; }
+.session-guide h3 { margin: 0 0 8px; color: var(--ink); font-size: 11px; font-weight: 600; }
+.session-guide p { margin: 9px 0; }
+.session-guide strong { color: var(--ink); font-weight: 600; }
+.session-guide table { width: 100%; margin: 12px 0; border-collapse: collapse; font-size: 9px; text-align: left; }
+.session-guide td, .session-guide th { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); font-weight: 400; }
+.session-guide thead { color: var(--faint); }
+.session-guide a { color: var(--beige); text-underline-offset: 3px; }
+.shortcuts { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+kbd { margin-left: 5px; padding: 1px 4px; border: 1px solid var(--line); border-radius: 3px; font: 8px var(--mono); }
+kbd:first-child { margin-left: 0; }
+@media (max-width: 700px) {
+  body { padding: 7px; }
+  .desk { padding-inline: 16px; }
+  .brand { letter-spacing: .06em; font-size: 8px; gap: 7px; }
+  .header-right { gap: 8px; }
+  .session { padding-inline: 11px; }
+  .session-grid { gap: 8px; }
+  .card-top h2 { font-size: 11px; gap: 5px; }
+  .badge { font-size: 6px; letter-spacing: .04em; }
+  .window { gap: 4px; font-size: 9px; }
+}
+@media (max-width: 560px) and (min-width: 481px) {
+  .home-clock { display: none; }
+  .countdown { font-size: 23px; }
+  .countdown[data-long="true"] { font-size: 17px; }
+  .window { font-size: 8px; }
+}
+@media (max-width: 480px) {
+  body { padding: 6px; }
+  .desk, :root[data-layout="compact"] .desk { padding: 14px 13px 12px; border-radius: 12px; }
+  .brand-icon { width: 21px; height: 21px; }
+  .brand { font-size: 8px; letter-spacing: .04em; }
+  .home-clock { display: none; }
+  .header-right { gap: 0; }
+  .controls { gap: 1px; }
+  .icon-button { width: 26px; height: 27px; }
+  .fullscreen-button { display: none; }
+  .hero { padding: 15px 0; }
+  h1 { font-size: 27px; }
+  .hero-meta { gap: 8px; }
+  .eyebrow, .open-count { font-size: 7px; }
+  .session-grid { grid-template-columns: 1fr; gap: 8px; }
+  .session, :root[data-layout="compact"] .session { display: grid; grid-template-columns: 1fr auto; column-gap: 10px; padding: 11px 12px 10px; }
+  .card-top { grid-column: 1; justify-content: flex-start; gap: 10px; min-height: 18px; }
+  .card-top h2 { font-size: 12px; }
+  .badge { font-size: 7px; }
+  .city-clock { grid-column: 1; grid-row: 2; margin: 1px 0 0; }
+  .countdown-block, :root[data-layout="compact"] .countdown-block { grid-column: 2; grid-row: 1 / 3; align-self: center; margin: 0; text-align: right; }
+  .countdown { margin-top: 2px; font-size: 24px; }
+  .countdown[data-long="true"] { font-size: 19px; }
+  .schedule, :root[data-layout="compact"] .schedule { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 8px; }
+  .occurrence { margin: 0; font-size: 8px; }
+  .window { font-size: 9px; flex-shrink: 0; }
+  .progress { grid-column: 1 / -1; margin-top: 8px; }
+  .overlap { padding: 10px 11px; gap: 8px; }
+  .overlap-left { gap: 8px; }
+  .overlap-icon { display: none; }
+  .overlap p { font-size: 8px; }
+  .overlap-right time { font-size: 10px; }
+  .day-map { margin-top: 15px; }
+  .map-row { grid-template-columns: 52px 1fr; }
+  .map-axis { margin-left: 52px; }
+  .footer { gap: 8px; align-items: flex-start; }
+  .footer p { font-size: 7px; max-width: 220px; }
+  .text-button { font-size: 7px; }
+}
+@media (max-width: 300px) {
+  .brand-icon { display: none; }
+  .countdown { font-size: 21px; }
+  .countdown[data-long="true"] { font-size: 16px; }
+  .overlap { align-items: flex-start; flex-direction: column; }
+  .overlap-right { flex-direction: row; gap: 7px; align-items: baseline; }
+  .settings-dialog { padding: 16px; }
+  .form-actions { align-items: flex-start; flex-direction: column; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .icon-button { transition: background .12s, color .12s; }
+}
+@media (display-mode: fullscreen) { body { padding: 24px; } }
+:fullscreen body { display: grid; align-items: center; min-height: 100vh; }
+:fullscreen .desk { width: 100%; }
+
+  </style>
 </head>
 <body>
   <main class="desk" id="desk" aria-label="Forex session clock">
@@ -96,5 +328,373 @@
       <p class="shortcuts"><kbd>C</kbd> Compact <kbd>F</kbd> Fullscreen <kbd>S</kbd> Settings <kbd>Esc</kbd> Close</p>
     </div>
   </dialog>
+  <script>
+/* No service, API key, build step, or network request is needed for this clock. */
+(function (root, factory) {
+  "use strict";
+  const api = factory();
+  if (typeof module === "object" && module.exports) module.exports = api;
+  if (root && root.document) api.mount(root);
+})(typeof window !== "undefined" ? window : null, function () {
+  "use strict";
+  const MINUTE = 60 * 1000;
+  const DAY = 24 * 60 * MINUTE;
+  const DEFAULTS = Object.freeze({ name: "Joseph’s Trading Desk", zone: "Africa/Juba", format: 24, theme: "dark", layout: "auto" });
+  const ZONES = Object.freeze({ "Africa/Juba": "Juba", UTC: "UTC", "Europe/London": "London", "America/New_York": "New York", "Asia/Tokyo": "Tokyo", "Australia/Sydney": "Sydney" });
+  const SESSIONS = Object.freeze([
+    Object.freeze({ id: "asia", name: "Asia", city: "Tokyo", zone: "Asia/Tokyo", open: 9, close: 18 }),
+    Object.freeze({ id: "london", name: "London", city: "London", zone: "Europe/London", open: 8, close: 17 }),
+    Object.freeze({ id: "newyork", name: "New York", city: "New York", zone: "America/New_York", open: 8, close: 17 })
+  ]);
+  const formatters = new Map();
+  const pad = value => String(value).padStart(2, "0");
+  const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+
+  function formatter(zone, options) {
+    const key = zone + JSON.stringify(options);
+    if (!formatters.has(key)) formatters.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, calendar: "gregory", numberingSystem: "latn", ...options }));
+    return formatters.get(key);
+  }
+
+  function zonedParts(epoch, zone) {
+    const result = {};
+    for (const part of formatter(zone, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(epoch)) {
+      if (part.type !== "literal") result[part.type] = Number(part.value);
+    }
+    return result;
+  }
+
+  function calendarShift(parts, days) {
+    const date = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + days));
+    return { year: date.getUTCFullYear(), month: date.getUTCMonth() + 1, day: date.getUTCDate(), weekday: date.getUTCDay() };
+  }
+
+  function dateKey(parts) { return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`; }
+  function dateDistance(first, last) { return Math.round((Date.UTC(last.year, last.month - 1, last.day) - Date.UTC(first.year, first.month - 1, first.day)) / DAY); }
+
+  // Convert a known city-local wall time into a UTC timestamp. The chosen session
+  // hours (08:00/09:00/17:00/18:00) and map ticks avoid DST gap/repeated hours.
+  function wallTime(parts, zone) {
+    const target = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour || 0, parts.minute || 0, parts.second || 0);
+    let guess = target;
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const actual = zonedParts(guess, zone);
+      const delta = target - Date.UTC(actual.year, actual.month - 1, actual.day, actual.hour, actual.minute, actual.second);
+      if (delta === 0) return guess;
+      guess += delta;
+    }
+    throw new RangeError("This local time cannot be resolved in " + zone);
+  }
+
+  function sessionWindows(session, now) {
+    const cityDate = zonedParts(now, session.zone);
+    const windows = [];
+    for (let offset = -2; offset <= 9; offset++) {
+      const startDate = calendarShift(cityDate, offset);
+      if (startDate.weekday === 0 || startDate.weekday === 6) continue;
+      const endDate = calendarShift(startDate, session.close <= session.open ? 1 : 0);
+      windows.push({ start: wallTime({ ...startDate, hour: session.open }, session.zone), end: wallTime({ ...endDate, hour: session.close }, session.zone) });
+    }
+    return windows;
+  }
+
+  function intersections(first, second) {
+    const result = [];
+    let a = 0, b = 0;
+    while (a < first.length && b < second.length) {
+      const start = Math.max(first[a].start, second[b].start);
+      const end = Math.min(first[a].end, second[b].end);
+      if (end > start) result.push({ start, end });
+      if (first[a].end <= second[b].end) a++; else b++;
+    }
+    return result;
+  }
+
+  function pickWindow(windows, now) {
+    const active = windows.find(window => window.start <= now && now < window.end);
+    const chosen = active || windows.find(window => window.start > now);
+    if (!chosen) throw new RangeError("No upcoming session in the schedule");
+    return { active: Boolean(active), window: chosen, remaining: (active ? chosen.end : chosen.start) - now, elapsed: active ? clamp((now - chosen.start) / (chosen.end - chosen.start), 0, 1) : 0 };
+  }
+
+  function makePlan(now, zone = DEFAULTS.zone) {
+    const localDate = zonedParts(now, zone);
+    const start = wallTime(calendarShift(localDate, 0), zone);
+    const end = wallTime(calendarShift(localDate, 1), zone);
+    const windows = Object.fromEntries(SESSIONS.map(session => [session.id, sessionWindows(session, now)]));
+    return { zone, date: dateKey(localDate), start, end, windows, overlaps: intersections(windows.london, windows.newyork) };
+  }
+
+  function makeSnapshot(plan, now) {
+    const sessions = SESSIONS.map(session => ({ ...session, ...pickWindow(plan.windows[session.id], now) }));
+    const active = sessions.filter(session => session.active);
+    const events = sessions.map(session => ({ session, at: session.active ? session.window.end : session.window.start, action: session.active ? "closes" : "opens" })).sort((a, b) => a.at - b.at);
+    let headline = "Between sessions.";
+    if (active.length === 1) headline = `${active[0].id === "asia" ? "Tokyo" : active[0].name} is in session.`;
+    if (active.length > 1) headline = active.some(session => session.id === "newyork") ? "London meets New York." : "Tokyo meets London.";
+    return { now, sessions, active, nextEvent: events[0], headline, overlap: pickWindow(plan.overlaps, now) };
+  }
+
+  function mapGeometry(plan) {
+    const span = plan.end - plan.start;
+    const left = epoch => 100 * (epoch - plan.start) / span;
+    const localDate = zonedParts(plan.start, plan.zone);
+    const ticks = [0, 6, 12, 18].map(hour => ({ label: pad(hour), at: wallTime({ ...localDate, hour, minute: 0, second: 0 }, plan.zone) }));
+    ticks.push({ label: "24", at: plan.end });
+    return {
+      ticks: ticks.map(tick => ({ ...tick, left: left(tick.at) })),
+      rows: SESSIONS.map(session => ({ ...session, bars: plan.windows[session.id].filter(window => window.start < plan.end && window.end > plan.start).map(window => ({ ...window, left: left(Math.max(window.start, plan.start)), width: 100 * (Math.min(window.end, plan.end) - Math.max(window.start, plan.start)) / span })) }))
+    };
+  }
+
+  function countdown(milliseconds) {
+    const total = Math.max(0, Math.ceil(milliseconds / 1000));
+    const days = Math.floor(total / 86400);
+    const clock = `${pad(Math.floor(total % 86400 / 3600))}:${pad(Math.floor(total % 3600 / 60))}:${pad(total % 60)}`;
+    return (days ? days + "d " : "") + clock;
+  }
+
+  function normalizePrefs(input = {}) {
+    if (!input || typeof input !== "object" || Array.isArray(input)) input = {};
+    return {
+      name: typeof input.name === "string" && input.name.trim() ? input.name.trim().slice(0, 42) : DEFAULTS.name,
+      zone: Object.prototype.hasOwnProperty.call(ZONES, input.zone) ? input.zone : DEFAULTS.zone,
+      format: Number(input.format) === 12 ? 12 : 24,
+      theme: input.theme === "light" ? "light" : "dark",
+      layout: ["auto", "full", "compact"].includes(input.layout) ? input.layout : "auto"
+    };
+  }
+
+  function clock(epoch, zone, format = 24, seconds = false) {
+    return formatter(zone, { hour: "2-digit", minute: "2-digit", ...(seconds ? { second: "2-digit" } : {}), hourCycle: format === 12 ? "h12" : "h23" }).format(epoch);
+  }
+
+  function relativeDate(epoch, now, zone) {
+    const distance = dateDistance(zonedParts(now, zone), zonedParts(epoch, zone));
+    if (distance === 0) return "Today";
+    if (distance === 1) return "Tomorrow";
+    return formatter(zone, { weekday: "short", day: "2-digit", month: "short" }).format(epoch);
+  }
+
+  function offsetLabel(epoch, zone) {
+    const parts = zonedParts(epoch, zone);
+    const minutes = Math.round((Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second) - Math.floor(epoch / 1000) * 1000) / MINUTE);
+    if (minutes === 0) return "UTC";
+    const absolute = Math.abs(minutes);
+    return `UTC${minutes >= 0 ? "+" : "−"}${pad(Math.floor(absolute / 60))}${absolute % 60 ? ":" + pad(absolute % 60) : ""}`;
+  }
+
+  function mount(win) {
+    const doc = win.document;
+    const $ = id => doc.getElementById(id);
+    const setText = (id, value) => { const element = $(id); if (element.textContent !== value) element.textContent = value; };
+    const setTime = (id, epoch, zone, format, seconds = false) => { setText(id, clock(epoch, zone, format, seconds)); $(id).dateTime = new Date(epoch).toISOString(); };
+    const path = (win.location.pathname || "/").replace(/\/index\.html$/, "/").replace(/\/+$/, "") || "/";
+    const storageKey = "jnotes.tradingdesk.v1:" + path;
+    let saved = {};
+    try { const parsed = JSON.parse(win.localStorage.getItem(storageKey) || "null"); if (parsed && parsed.version === 1) saved = parsed; } catch (_) { /* Storage can be disabled inside embeds. */ }
+    let prefs = normalizePrefs(saved);
+    try {
+      const query = new URLSearchParams(win.location.search || "");
+      const overrides = {};
+      for (const key of ["name", "zone", "format", "theme", "layout"]) if (query.has(key)) overrides[key] = query.get(key);
+      prefs = normalizePrefs({ ...prefs, ...overrides });
+    } catch (_) { /* Defaults are still usable. */ }
+    const media = win.matchMedia("(max-width: 480px), (max-height: 580px)");
+    let plan = null;
+    let mapBars = [];
+    let lastActiveKey = null;
+    let interval = null;
+
+    function savePrefs() {
+      try { win.localStorage.setItem(storageKey, JSON.stringify({ version: 1, ...prefs })); $("storage-notice").hidden = true; }
+      catch (_) { $("storage-notice").hidden = false; }
+    }
+
+    function applyLayout() {
+      const compact = prefs.layout === "compact" || (prefs.layout === "auto" && media.matches);
+      doc.documentElement.dataset.layout = compact ? "compact" : "full";
+      $("compact-button").setAttribute("aria-pressed", String(compact));
+      const label = compact ? "Expand view" : "Use compact layout";
+      $("compact-button").setAttribute("aria-label", label);
+      $("compact-button").title = label + " (C)";
+    }
+
+    function applyPrefs() {
+      doc.documentElement.dataset.theme = prefs.theme;
+      setText("desk-name", prefs.name.toLocaleUpperCase("en-US"));
+      doc.title = prefs.name + " · Session Clock";
+      applyLayout();
+    }
+
+    function buildMap() {
+      const geometry = mapGeometry(plan);
+      const axis = geometry.ticks.map(tick => {
+        const label = doc.createElement("span");
+        label.className = "axis-tick";
+        label.textContent = tick.label;
+        label.style.left = tick.left + "%";
+        return label;
+      });
+      $("map-axis").replaceChildren(...axis);
+      mapBars = [];
+      for (const row of geometry.rows) {
+        const bars = row.bars.map(window => {
+          const element = doc.createElement("span");
+          element.className = "map-bar";
+          element.style.left = window.left + "%";
+          element.style.width = window.width + "%";
+          mapBars.push({ element, start: window.start, end: window.end });
+          return element;
+        });
+        $(row.id + "-bars").replaceChildren(...bars);
+        const ticks = geometry.ticks.slice(1, -1).map(tick => { const element = doc.createElement("span"); element.className = "map-tick"; element.style.left = tick.left + "%"; return element; });
+        $(row.id + "-ticks").replaceChildren(...ticks);
+        const describe = epoch => formatter(prefs.zone, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: prefs.format === 12 ? "h12" : "h23" }).format(epoch);
+        const ranges = row.bars.map(window => describe(Math.max(window.start, plan.start)) + " to " + describe(Math.min(window.end, plan.end)));
+        $(row.id + "-track").setAttribute("aria-label", `${row.name}: ${ranges.length ? ranges.join("; ") : "no scheduled session on this date"}. ${ZONES[prefs.zone]} time.`);
+      }
+      setText("map-zone", ZONES[prefs.zone].toUpperCase() + " · 24H");
+    }
+
+    function update() {
+      const now = Date.now();
+      const localDate = dateKey(zonedParts(now, prefs.zone));
+      if (!plan || plan.date !== localDate || plan.zone !== prefs.zone) { plan = makePlan(now, prefs.zone); buildMap(); }
+      const snapshot = makeSnapshot(plan, now);
+      setTime("home-time", now, prefs.zone, prefs.format, true);
+      setText("home-zone", ZONES[prefs.zone].toUpperCase() + " · " + offsetLabel(now, prefs.zone));
+      setText("today-label", formatter(prefs.zone, { weekday: "long", day: "2-digit", month: "long" }).format(now).toUpperCase());
+      setText("headline", snapshot.headline);
+      setText("open-count", `${snapshot.active.length} OF 3 OPEN`);
+      $("open-count").dataset.open = String(snapshot.active.length > 0);
+      const next = snapshot.nextEvent;
+      const nextName = next.session.id === "asia" ? "Tokyo" : next.session.name;
+      const nextDate = relativeDate(next.at, now, prefs.zone);
+      setText("next-change", `Next change · ${nextName} ${next.action}${nextDate === "Today" ? "" : " " + nextDate.toLowerCase()} at ${clock(next.at, prefs.zone, prefs.format)}.`);
+
+      for (const session of snapshot.sessions) {
+        const prefix = session.id + "-";
+        $(prefix + "card").dataset.active = String(session.active);
+        $(prefix + "card").dataset.soon = String(!session.active && session.remaining <= 30 * MINUTE);
+        setText(prefix + "status", session.active ? "OPEN" : session.remaining <= 30 * MINUTE ? "SOON" : "CLOSED");
+        setTime(prefix + "city-time", now, session.zone, prefs.format);
+        setText(prefix + "countdown-label", session.active ? "CLOSES IN" : "OPENS IN");
+        const countdownText = countdown(session.remaining);
+        setText(prefix + "countdown", countdownText);
+        $(prefix + "countdown").dateTime = "PT" + Math.max(0, Math.ceil(session.remaining / 1000)) + "S";
+        $(prefix + "countdown").dataset.long = String(countdownText.includes("d "));
+        const occurrence = session.active ? "Current" : relativeDate(session.window.start, now, prefs.zone);
+        setText(prefix + "occurrence", `${occurrence} · ${ZONES[prefs.zone]}`);
+        setTime(prefix + "start", session.window.start, prefs.zone, prefs.format);
+        setTime(prefix + "end", session.window.end, prefs.zone, prefs.format);
+        const dayOffset = dateDistance(zonedParts(session.window.start, prefs.zone), zonedParts(session.window.end, prefs.zone));
+        setText(prefix + "offset", dayOffset ? `+${dayOffset}d` : "");
+        $(prefix + "offset").title = dayOffset ? "Closes on the following date in " + ZONES[prefs.zone] : "";
+        $(prefix + "fill").style.width = (session.elapsed * 100).toFixed(2) + "%";
+        $(prefix + "progress").setAttribute("aria-valuenow", String(Math.floor(session.elapsed * 100)));
+        $(prefix + "progress").setAttribute("aria-valuetext", session.active ? `${Math.floor(session.elapsed * 100)}% elapsed` : "Not currently in session");
+        $(prefix + "now").style.left = clamp(100 * (now - plan.start) / (plan.end - plan.start), 0, 100) + "%";
+      }
+      for (const bar of mapBars) bar.element.dataset.active = String(bar.start <= now && now < bar.end);
+      const overlap = snapshot.overlap;
+      const hours = (overlap.window.end - overlap.window.start) / (60 * MINUTE);
+      const duration = Number.isInteger(hours) ? hours + "h" : Math.floor(hours) + "h " + Math.round(hours % 1 * 60) + "m";
+      $("overlap").dataset.active = String(overlap.active);
+      setText("overlap-label", overlap.active ? "ENDS IN" : "STARTS IN");
+      setText("overlap-countdown", countdown(overlap.remaining));
+      $("overlap-countdown").dateTime = "PT" + Math.max(0, Math.ceil(overlap.remaining / 1000)) + "S";
+      setText("overlap-detail", `${relativeDate(overlap.window.start, now, prefs.zone)} · ${clock(overlap.window.start, prefs.zone, prefs.format)}–${clock(overlap.window.end, prefs.zone, prefs.format)} · ${duration}`);
+      const activeKey = snapshot.active.map(session => session.id).join(",");
+      if (lastActiveKey !== null && activeKey !== lastActiveKey) setText("session-announcement", snapshot.headline + (snapshot.active.length ? "" : " No tracked session is currently open."));
+      lastActiveKey = activeKey;
+      $("error-notice").hidden = true;
+    }
+
+    function safeUpdate() {
+      try { update(); }
+      catch (_) {
+        plan = null;
+        $("error-notice").hidden = false;
+        setText("headline", "Clock unavailable.");
+        setText("open-count", "UNAVAILABLE");
+        setText("next-change", "Please refresh in a current browser.");
+        setText("home-time", "--:--:--");
+        $("open-count").dataset.open = "false";
+        $("overlap").dataset.active = "false";
+        setText("overlap-countdown", "--:--:--");
+        setText("overlap-detail", "Schedule unavailable");
+        for (const session of SESSIONS) {
+          $(session.id + "-card").dataset.active = "false";
+          $(session.id + "-card").dataset.soon = "false";
+          setText(session.id + "-status", "UNAVAILABLE");
+          setText(session.id + "-countdown", "--:--:--");
+        }
+      }
+    }
+
+    function toggleCompact() {
+      prefs.layout = doc.documentElement.dataset.layout === "compact" ? "full" : "compact";
+      applyLayout();
+      savePrefs();
+    }
+
+    function openSettings(guide = false) {
+      for (const key of ["name", "zone", "format", "theme", "layout"]) $(key + "-input").value = String(prefs[key]);
+      const dialog = $("settings-dialog");
+      if (!dialog.open) dialog.showModal();
+      if (guide) $("session-guide").scrollIntoView({ block: "start" });
+    }
+
+    async function toggleFullscreen() {
+      try {
+        if (doc.fullscreenElement) await doc.exitFullscreen();
+        else await doc.documentElement.requestFullscreen();
+      } catch (_) { setText("session-announcement", "Fullscreen is unavailable in this embed. You can open the widget in its own tab."); }
+    }
+
+    function stopTicking() { if (interval !== null) { win.clearInterval(interval); interval = null; } }
+    function startTicking() { safeUpdate(); if (interval === null && !doc.hidden) interval = win.setInterval(safeUpdate, 1000); }
+
+    $("compact-button").addEventListener("click", toggleCompact);
+    $("settings-button").addEventListener("click", () => openSettings());
+    $("guide-button").addEventListener("click", () => openSettings(true));
+    $("close-settings").addEventListener("click", () => $("settings-dialog").close());
+    $("fullscreen-button").addEventListener("click", toggleFullscreen);
+    if (!doc.documentElement.requestFullscreen) $("fullscreen-button").hidden = true;
+    doc.addEventListener("fullscreenchange", () => { const label = doc.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen"; $("fullscreen-button").setAttribute("aria-label", label); $("fullscreen-button").title = label + " (F)"; });
+    $("settings-dialog").addEventListener("click", event => {
+      if (event.target !== $("settings-dialog")) return;
+      const bounds = event.target.getBoundingClientRect();
+      if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close();
+    });
+    $("settings-form").addEventListener("submit", event => {
+      event.preventDefault();
+      prefs = normalizePrefs(Object.fromEntries(["name", "zone", "format", "theme", "layout"].map(key => [key, $(key + "-input").value])));
+      plan = null;
+      applyPrefs();
+      savePrefs();
+      safeUpdate();
+      $("settings-dialog").close();
+    });
+    doc.addEventListener("keydown", event => {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey || $("settings-dialog").open || event.target.closest("input, textarea, select, [contenteditable]:not([contenteditable='false'])")) return;
+      const actions = { c: toggleCompact, f: toggleFullscreen, s: openSettings };
+      const action = actions[String(event.key).toLowerCase()];
+      if (action) { event.preventDefault(); action(); }
+    });
+    if (media.addEventListener) media.addEventListener("change", applyLayout); else media.addListener(applyLayout);
+    doc.addEventListener("visibilitychange", () => { if (doc.hidden) stopTicking(); else startTicking(); });
+    win.addEventListener("focus", safeUpdate);
+    win.addEventListener("pageshow", startTicking);
+    win.addEventListener("pagehide", stopTicking);
+    applyPrefs();
+    startTicking();
+  }
+
+  return Object.freeze({ DEFAULTS, ZONES, SESSIONS, zonedParts, calendarShift, dateKey, dateDistance, wallTime, sessionWindows, intersections, pickWindow, makePlan, makeSnapshot, mapGeometry, countdown, normalizePrefs, clock, relativeDate, offsetLabel, mount });
+});
+
+  </script>
 </body>
 </html>
